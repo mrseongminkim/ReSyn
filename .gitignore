@@ -1,0 +1,6 @@
+*.pyc
+checkpoints/prax
+wandb
+_datasets
+datasets
+*.ckpt

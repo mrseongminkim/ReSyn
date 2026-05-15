@@ -1,0 +1,6 @@
+line-length = 140
+
+[lint]
+
+[format]
+quote-style = "single"
