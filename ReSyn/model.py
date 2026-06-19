@@ -4,6 +4,7 @@ from typing import Optional
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from huggingface_hub import PyTorchModelHubMixin
 from torch.nn.init import xavier_uniform_
 
 from config import Set2RegexConfig, StringConfig
@@ -113,16 +114,21 @@ class DecoderBlock(nn.Module):
         return x, new_kv
 
 
-class Segmenter(nn.Module):
-    def __init__(self):
+class Segmenter(
+    nn.Module,
+    PyTorchModelHubMixin,
+    library_name='resyn',
+    tags=['regex-synthesis', 'segmenter', 'pytorch'],
+    repo_url='https://github.com/mrseongminkim/ReSyn',
+    paper_url='https://arxiv.org/pdf/2603.24624',
+):
+    def __init__(self, d_model=256, num_layers=4, num_heads=4, max_len=1_110):
         super().__init__()
         self.enc_vocab = StringVocabulary.get_vocabulary_size()
         self.dec_vocab = SegmenterVocabulary.get_vocabulary_size()
-        self.d_model = 256
-        num_layers = 4
-        num_heads = 4
+        self.d_model = d_model
         d_ff = 4 * self.d_model
-        self.positional_encoding = PositionalEncoding(self.d_model, max_len=1_110)
+        self.positional_encoding = PositionalEncoding(self.d_model, max_len=max_len)
         self.enc_emb = nn.Embedding(self.enc_vocab, self.d_model, padding_idx=StringVocabulary.pad_token_index)
         self.dec_emb = nn.Embedding(self.dec_vocab, self.d_model, padding_idx=SegmenterVocabulary.pad_token_index)
         enc_layer = nn.TransformerEncoderLayer(self.d_model, num_heads, d_ff, batch_first=True, norm_first=True)
@@ -156,8 +162,15 @@ class Segmenter(nn.Module):
         return logits
 
 
-class Partitioner(nn.Module):
-    def __init__(self, hidden_size=256, n_layers=2, n_heads=8, max_string_length=StringConfig.max_string_length, device='cuda'):
+class Partitioner(
+    nn.Module,
+    PyTorchModelHubMixin,
+    library_name='resyn',
+    tags=['regex-synthesis', 'partitioner', 'pytorch'],
+    repo_url='https://github.com/mrseongminkim/ReSyn',
+    paper_url='https://arxiv.org/pdf/2603.24624',
+):
+    def __init__(self, hidden_size=256, n_layers=2, n_heads=8, max_string_length=StringConfig.max_string_length, device=None):
         super().__init__()
         input_vocab_size = StringVocabulary.get_vocabulary_size()
         self.input_pad_token_index = StringVocabulary.pad_token_index
@@ -166,7 +179,7 @@ class Partitioner(nn.Module):
         self.n_layers = n_layers
         self.n_heads = n_heads
         self.max_string_length = max_string_length
-        self.device = device
+        self.device = device if device is not None else ('cuda' if torch.cuda.is_available() else 'cpu')
 
         self.character_embedding = nn.Embedding(input_vocab_size, hidden_size, padding_idx=self.input_pad_token_index)
         self.positional_encoding = PositionalEncoding(hidden_size, max_string_length)
@@ -241,8 +254,15 @@ class Partitioner(nn.Module):
                 xavier_uniform_(p)
 
 
-class Router(nn.Module):
-    def __init__(self, hidden_size=256, n_layers=2, n_heads=8, max_string_length=StringConfig.max_string_length, device='cuda'):
+class Router(
+    nn.Module,
+    PyTorchModelHubMixin,
+    library_name='resyn',
+    tags=['regex-synthesis', 'router', 'pytorch'],
+    repo_url='https://github.com/mrseongminkim/ReSyn',
+    paper_url='https://arxiv.org/pdf/2603.24624',
+):
+    def __init__(self, hidden_size=256, n_layers=2, n_heads=8, max_string_length=StringConfig.max_string_length, device=None):
         super().__init__()
         input_vocab_size = StringVocabulary.get_vocabulary_size()
         self.input_pad_token_index = StringVocabulary.pad_token_index
@@ -250,7 +270,7 @@ class Router(nn.Module):
         self.n_layers = n_layers
         self.n_heads = n_heads
         self.max_string_length = max_string_length
-        self.device = device
+        self.device = device if device is not None else ('cuda' if torch.cuda.is_available() else 'cpu')
 
         self.character_embedding = nn.Embedding(input_vocab_size, hidden_size, padding_idx=self.input_pad_token_index)
         self.positional_encoding = PositionalEncoding(hidden_size, max_string_length)
@@ -295,8 +315,15 @@ class Router(nn.Module):
                 xavier_uniform_(p)
 
 
-class Set2Regex(nn.Module):
-    def __init__(self, hidden_size=256, n_layers=2, n_heads=8, max_string_length=Set2RegexConfig.max_regex_length + 1, device='cuda'):
+class Set2Regex(
+    nn.Module,
+    PyTorchModelHubMixin,
+    library_name='resyn',
+    tags=['regex-synthesis', 'set2regex', 'pytorch'],
+    repo_url='https://github.com/mrseongminkim/ReSyn',
+    paper_url='https://arxiv.org/pdf/2603.24624',
+):
+    def __init__(self, hidden_size=256, n_layers=2, n_heads=8, max_string_length=Set2RegexConfig.max_regex_length + 1, device=None):
         super().__init__()
         input_vocab_size = StringVocabulary.get_vocabulary_size()
         self.input_pad_token_index = StringVocabulary.pad_token_index
@@ -306,7 +333,7 @@ class Set2Regex(nn.Module):
         self.n_layers = n_layers
         self.n_heads = n_heads
         self.max_string_length = max_string_length
-        self.device = device
+        self.device = device if device is not None else ('cuda' if torch.cuda.is_available() else 'cpu')
 
         self.character_embedding = nn.Embedding(input_vocab_size, hidden_size, padding_idx=self.input_pad_token_index)
         self.positional_encoding = PositionalEncoding(hidden_size, max_string_length * 2)

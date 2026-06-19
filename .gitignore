@@ -1,5 +1,7 @@
 *.pyc
 checkpoints/prax
+checkpoints/models--*
+checkpoints/.locks
 wandb
 _datasets
 datasets

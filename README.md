@@ -1,7 +1,9 @@
 # ReSyn
 
-[![arXiv](https://img.shields.io/badge/arXiv-2603.24624-b31b1b.svg)](https://arxiv.org/abs/2603.24624v2)
+[![arXiv](https://img.shields.io/badge/arXiv-2603.24624-b31b1b.svg)](https://arxiv.org/abs/2603.24624)
+[![Paper](https://img.shields.io/badge/Paper-HuggingFace-ffd21e.svg)](https://huggingface.co/papers/2603.24624)
 [![Dataset](https://img.shields.io/badge/Dataset-HuggingFace-ffd21e.svg)](https://huggingface.co/datasets/mrseongminkim/ReSyn)
+[![Models](https://img.shields.io/badge/Models-HuggingFace-ffd21e.svg)](https://huggingface.co/models?search=mrseongminkim/ReSyn)
 [![Logs](https://img.shields.io/badge/Logs-W&B-ffbe00.svg)](https://wandb.ai/mrseongminkim-university-of-seoul/ReSyn)
 
 This repository contains the official implementation of **ReSyn: A Generalized Recursive Regular Expression Synthesis Framework** (accepted in IJCAI 2026).
@@ -100,7 +102,19 @@ We provide pre-trained models and complete training logs to facilitate reproduci
 
 1. **Training Logs:** All training logs and metrics can be accessed via [Weights & Biases (W&B)](https://wandb.ai/mrseongminkim-university-of-seoul/ReSyn).
 2. **Prax Model:** The pre-trained Prax model is available on Hugging Face: [mrseongminkim/ReSyn-byt5-small](https://huggingface.co/mrseongminkim/ReSyn-byt5-small).
-3. **ReSyn Components:** The checkpoints for the ReSyn component models are small in size and are directly included in this repository.
+3. **ReSyn Components:** The four component checkpoints are hosted as individual model repositories on Hugging Face (and, being small in size, are also included in this repository for convenience):
+   - [mrseongminkim/ReSyn-Set2Regex](https://huggingface.co/mrseongminkim/ReSyn-Set2Regex)
+   - [mrseongminkim/ReSyn-Router](https://huggingface.co/mrseongminkim/ReSyn-Router)
+   - [mrseongminkim/ReSyn-Partitioner](https://huggingface.co/mrseongminkim/ReSyn-Partitioner)
+   - [mrseongminkim/ReSyn-Segmenter](https://huggingface.co/mrseongminkim/ReSyn-Segmenter)
+
+   At inference time, each component loads from the local `checkpoints/` directory if available; otherwise it is automatically downloaded from the Hub. You can also load any component directly via [`PyTorchModelHubMixin`](https://huggingface.co/docs/huggingface_hub/package_reference/mixins#huggingface_hub.PyTorchModelHubMixin):
+
+   ```python
+   from ReSyn.model import Set2Regex
+
+   model = Set2Regex.from_pretrained("mrseongminkim/ReSyn-Set2Regex")
+   ```
 
 ## Citation
 

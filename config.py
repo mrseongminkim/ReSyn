@@ -31,6 +31,15 @@ class CheckPointConfig:
 
 
 @dataclass
+class HuggingFaceConfig:
+    partitioner: str = 'mrseongminkim/ReSyn-Partitioner'
+    router: str = 'mrseongminkim/ReSyn-Router'
+    segmenter: str = 'mrseongminkim/ReSyn-Segmenter'
+    set2regex: str = 'mrseongminkim/ReSyn-Set2Regex'
+    cache_dir: str = 'checkpoints'
+
+
+@dataclass
 class TimeoutConfig:
     synthesis: int = 10
     fa_equivalence: int = 1

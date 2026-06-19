@@ -1,10 +1,11 @@
 import math
+import os
 from collections import defaultdict
 
 import torch
 from torch.nn.utils.rnn import pad_sequence
 
-from config import CheckPointConfig
+from config import CheckPointConfig, HuggingFaceConfig
 from utils.engine import fullmatch
 from utils.exceptions import SynthesisFailure, get_smallest_named_character_class
 from utils.normalizer import NormalizeException, normalize
@@ -47,10 +48,25 @@ def string_to_splitter_indices(strings, skip_padding=False):
     return strings_indices
 
 
+def load_or_download_model(model_cls, local_path, repo_id, is_lightning=False):
+    if os.path.exists(local_path):
+        model = model_cls()
+        if is_lightning:
+            checkpoint = torch.load(local_path, weights_only=False, map_location='cpu')
+            state_dict = {k.replace('model.', '', 1): v for k, v in checkpoint['state_dict'].items() if k.startswith('model.')}
+        else:
+            state_dict = torch.load(local_path, weights_only=True, map_location='cpu')
+        model.load_state_dict(state_dict)
+    else:
+        model = model_cls.from_pretrained(repo_id, cache_dir=HuggingFaceConfig.cache_dir)
+    return model.cuda()
+
+
 class PartitionerServer:
     def __init__(self):
-        model = Partitioner().cuda()
-        model.load_state_dict(torch.load(f'checkpoints/partitioner/{CheckPointConfig.partitioner}', weights_only=True))
+        model = load_or_download_model(
+            Partitioner, f'checkpoints/partitioner/{CheckPointConfig.partitioner}', HuggingFaceConfig.partitioner
+        )
         model.eval()
         self.model = torch.compile(model)
 
@@ -75,10 +91,9 @@ class PartitionerServer:
 
 class SegmenterServer:
     def __init__(self):
-        model = Segmenter().cuda()
-        checkpoint = torch.load(f'checkpoints/segmenter/{CheckPointConfig.segmenter}', weights_only=False)
-        state_dict = {k.replace('model.', '', 1): v for k, v in checkpoint['state_dict'].items() if k.startswith('model.')}
-        model.load_state_dict(state_dict)
+        model = load_or_download_model(
+            Segmenter, f'checkpoints/segmenter/{CheckPointConfig.segmenter}', HuggingFaceConfig.segmenter, is_lightning=True
+        )
         model.eval()
         self.model = torch.compile(model)
 
@@ -155,8 +170,7 @@ class SegmenterServer:
 
 class RouterServer:
     def __init__(self):
-        model = Router().cuda()
-        model.load_state_dict(torch.load(f'checkpoints/router/{CheckPointConfig.router}', weights_only=True))
+        model = load_or_download_model(Router, f'checkpoints/router/{CheckPointConfig.router}', HuggingFaceConfig.router)
         model.eval()
         self.model = torch.compile(model)
         self.label = ['concat', 'union', 'no-op']
@@ -171,9 +185,7 @@ class RouterServer:
 
 class Set2RegexServer:
     def __init__(self, do_sample=False, debug=False, beam_size=0):
-        model = Set2Regex().cuda()
-        model.load_state_dict(torch.load(f'checkpoints/set2regex/{CheckPointConfig.set2regex}', weights_only=True, map_location='cpu'))
-        model.cuda()
+        model = load_or_download_model(Set2Regex, f'checkpoints/set2regex/{CheckPointConfig.set2regex}', HuggingFaceConfig.set2regex)
         model.eval()
         self.model = torch.compile(model)
         self.gen_config = {
